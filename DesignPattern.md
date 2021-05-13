@@ -163,7 +163,7 @@ public class Singleton {
        }
    ```
 
-   DruidDataSourceFactory源码
+   ***DruidDataSourceFactory源码***
 
    ```java
    public static DataSource createDataSource(Properties properties) throws Exception {
@@ -178,6 +178,8 @@ public class Singleton {
 
 2. Apache Commons FileUpload
 
+   ***源码***
+   
    ```java
    public interface FileItemFactory {
        FileItem createItem(String var1, String var2, boolean var3, String var4);
@@ -195,5 +197,11 @@ public class Singleton {
    	return result;
    }
    ```
-
+   ***创建对象的方法***
+   
+   ```java
+   FileItemFactory fileItemFactory = new DiskFileItemFactory();
+   ServletFileUpload fileUpload = new ServletFileUpload(fileItemFactory);
+   ```
+   
    
