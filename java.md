@@ -14,6 +14,7 @@
     setName.setAccessible(true);				//将获取的域的限权打开
     setName.invoke(String.class, "123");		//调用方法
 ```
+wanc 
 
 
 
