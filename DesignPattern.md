@@ -203,5 +203,14 @@ public class Singleton {
    FileItemFactory fileItemFactory = new DiskFileItemFactory();
    ServletFileUpload fileUpload = new ServletFileUpload(fileItemFactory);
    ```
+3. spring中IOC容器创建对象
+   ```java
+   ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
+   User user = context.getBean("User", User.class);
+   ```
+   
+   ***原理***
+   
+   > xml/注解+反射+工厂设计模式
    
    
