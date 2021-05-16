@@ -54,7 +54,36 @@
 
    
    
-   
+   ![Session会话Cookie和浏览器之间的关系](C:\Users\aptx\AppData\Roaming\Typora\typora-user-images\image-20210516211427900.png)
 
 
+
+**利用Session域对象保存用户登录信息**
+
+**一般在请求和资源文件中间添加一层Filter过滤器,检查用户权限**
+
+```java
+public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain 			filterChain) throws IOException, ServletException {
+    
+	HttpServletRequest request = (HttpServletRequest) servletRequest;
+    //获取会话域对象中的user值, 判断是否有查看限权
+	HttpSession session = request.getSession();
+	Object name = session.getAttribute("user");
+    
+	if (name == null) {
+		HttpServletResponse response = (HttpServletResponse) servletResponse;
+        //请求转发到登录页面
+		//response.setStatus(302);
+		//response.sendRedirect("http://localhost:8080/shop/login.jsp");
+        
+        //没有限权重定向到登录页面        
+		servletRequest.getRequestDispatcher("/login.jsp").forward(servletRequest, servletResponse);
+		return;
+	}
+    //拥有限权继续之前的会话
+	filterChain.doFilter(servletRequest, servletResponse);
+
+}
+
+```
 
