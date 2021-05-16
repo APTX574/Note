@@ -11,17 +11,16 @@
 
 
 
-**创建私有化示例**
+**创建私有化引用**
 
 ```java
-private static Singleton singleton;
+private static Singleton singleton = new Singleton();
 ```
 **私有化构造方法**
 
 ```java
 public class Singleton {
     private Singleton() {
-        singleton = new Singleton();
     }
 }
 ```
@@ -64,7 +63,7 @@ public static Singleton newInstance() {
 ###### 线程不安全问题
 
 ```Java
-if (singleton==null){				//此处在多线程运行时可能会多个线程满足if从而创建多个对象
+if (singleton==null){			//此处在多线程运行时可能会多个线程满足if从而创建多个对象
 	singleton = new Singleton();
 }
 ```
@@ -188,7 +187,7 @@ public class Singleton {
    
    public FileItem createItem(String fieldName, String contentType, boolean isFormField, String fileName) {
    	DiskFileItem result = new DiskFileItem(fieldName, contentType, isFormField, 
-        fileName,this.sizeThreshold, this.repository);
+        	fileName,this.sizeThreshold, this.repository);
    	result.setDefaultCharset(this.defaultCharset);
    	FileCleaningTracker tracker = this.getFileCleaningTracker();
    	if (tracker != null) {
