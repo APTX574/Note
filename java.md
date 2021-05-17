@@ -85,5 +85,26 @@ public void doFilter(ServletRequest servletRequest, ServletResponse servletRespo
 
 }
 
+
+```
+filter的xml配置文件
+```xml
+	<filter>
+        <!-->filter类的别名</!-->
+        <filter-name>filter</filter-name>
+        <!-->filter的类路径</!-->
+        <filter-class>com.example.shop.web.Filter</filter-class>	
+    </filter>
+    
+    <filter-mapping>
+        <!-->filter的别名</!-->
+        <filter-name>filter</filter-name>
+        <!-->filter的拦截路径, 对单一文件</!-->
+        <url-pattern>/file/p1.jpg</url-pattern>
+        <!-->filter的拦截路径, 对一文件夹</!-->
+        <url-pattern>/file/*</url-pattern>
+        <!-->filter的拦截路径, 对匹配文件</!-->
+		<url-pattern>*.jpg</url-pattern>
+    </filter-mapping>
 ```
 
