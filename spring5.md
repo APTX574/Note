@@ -213,9 +213,58 @@
 
 #### 基于注释
 
-##### 
+##### 创建方式
 
+1. 导入aop包
 
+2. 开启xml自动扫描
+
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <beans xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:context="http://www.springframework.org/schema/context"	<!--引入空间-->
+          xsi:schemaLocation="http://www.springframework.org/schema/beans 													http://www.springframework.org/schema/beans/spring-beans.xsd
+             http://www.springframework.org/schema/context																	http://www.springframework.org/schema/context/spring-context.xsd">
+       <!--开启自动扫描,扫描文件包为com下-->
+       <context:component-scan base-package="com" use-default-filters="false">
+           <!--关闭默认的过滤器使用下面我们给出的过滤器-->
+           <context:include-filter type="annotation" expression="注解类型"/>
+           <!--包括或忽略的过滤器, 按类或注解等筛选,表达式是-->
+           <!--也可以是使用默认的过滤器, 但是可以忽略掉满足条件的类-->
+   	</context:component-scan> 			
+   	
+   </beans>
+   ```
+
+##### 基于注解方式实现注入
+
+1. **@AutoWired**根据类型自动注入
+   * 直接在要注入的声明上添加注解,会自动根据类型注入
+2. **@Qualifier**根据属性名称进行注入
+   * 和AutoWired一起使用
+   * 一个接口多个实现类,根据名称指定对象    
+3. **@Resource**可以根据类型  也可以根据名称
+   * 可以使用上面两个注 解(不建议使用)
+4. **@Value**注入普通类型属性 
+   * 给一些普通的类型直接用value属性注入值
+
+> 都不需要set方法,已经封装了.
+
+ ##### 完全注解开发
+
+1. 创建一个配置类,代替xml配置文件 ,  要添加一个**@Configuration**注解标志注解类
+
+2. 添加注解**@ComponentScan(basePackages={包路径})**代替开启自动扫描的配置
+
+3.   加载配置类
+
+     ```javascript
+     ApplicationContext context = new 												AnnotationConfigApplicationContext(Config.class);
+     	//Config.calss为配置类的字节码
+     ```
+
+     
 
 ### IOC对bean管理中的FactoryBean
 
@@ -279,3 +328,32 @@
 
 2. 实现**After**和**Before**两个方法
 3. 在配置文件中配置后置处理器
+
+
+
+
+
+## AOP面向切面开发
+
+### 概念
+
+> 面向切面(方面)编程,将业务逻辑之间的耦合度 
+> 不通过修改源代码的方式 ,  在主干中添加新的功能
+
+### 原理
+
+**底层使用动态代理模式**
+
+1. 有接口时增强一个类的方法 ,  **JDK**动态代理
+
+   创建接口实现类的代理对象 ,  通过代理对象去增强实现类的方法
+
+2. 没有接口时增强一个类的方法 ,  **CGLIB**动态代理
+   ~~利用当前类的子类去增强高耦合~~
+   
+   创建当前类的**子类**的代理对象
+
+##### 底层实现代码
+
+
+
