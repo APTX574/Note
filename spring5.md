@@ -353,7 +353,107 @@
    
    创建当前类的**子类**的代理对象
 
-##### 底层实现代码
+#### AOP操作术语
+
+1. **连接点**
+   + 类中**理论上能被增强的方法**
+2. **切入点**
+   + 类中实际**真正被增强的方法**(有一些方法能被增强但是并未被增强)
+3. 通知(增强)
+   + **实际被增强**的部分**逻辑**(增加逻辑判断)
+     1. 前置通知
+     2. 后置通知
+     3. 环绕通知
+     4. 异常通知(当方法出现异常会执行)
+     5. 最终通知(finally不管有没有异常都会执行)
+4. **切面**  
+   + 把通知应用到切入点的过程(是一个**动作**)
+
+#### 底层实现代码
+
+使用类Proxy创建代理对象(**JDK**动态代理)
+
+```java
+//代理模式的使用main方法
+public class JDKProxy {
+    public static void main(String[] args) {
+        
+        //将被代理对象所实现的接口封着成Class的数组作为newProxyInstance 的参数
+        Class[] clazz = {UserDao.class};
+        
+        //创建被代理的对象
+        UserDao userDao = new UserDaoImpl();
+        
+        //创建代理模式Handler的具体实现并传入被代理对象,在Handler中实现方法的增强
+        InvocationHandler invocationHandler = new Handler(userDao);
+        
+        //创建代理对象,代理对象是一个被代理对象实现接口的实现类
+        //传入类的加载器,实现接口字节码数组,增强方法Handler的实现类
+        UserDao dao = (UserDao) Proxy.newProxyInstance(JDKProxy.class.getClassLoader(), 
+                                                       clazz, invocationHandler);
+        
+        //调用代理类的方法,这个方法就是被增强后的方法,返回值为Handler中involve方法中的返回值
+        int update = dao.update(12, 24);
+        
+        System.out.println("这个是被代理对象"+userDao);
+        System.out.println("这个是代理对象" + dao);
+    }
+}
+```
 
 
+```java
+//代理模式Handler的具体实现
+public class Handler implements InvocationHandler {
+    private Object object;
+    //私有的对象,是被代理的对象.需要一个带参构造函数
+    //重写的involve方法,在之中增强方法
+    //proxy为真实的代理对象,method为被代理的方法, args为被代理方法的参数
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        //通过merhod.getName()获得被代理的方法名, 进而进行区分代理
+        if (method.getName().equals(toString())) {
+            return method.invoke(object, args);
+        }
+        
+        //这个东西不能toString不知道为啥
+        ~~System.out.println("输出invoke方法参数proxy"+proxy);~~
+            
+        //调用原来的被代理对象,可以在这行代码的前后添加增强的方法
+        Object invoke = method.invoke(object, args);
+        
+        //对于一个代理对象, 其中的被代理对象也就是这个object都是唯一的
+        System.out.println("这个是Handler里面的object对象" + object);
+		
+        //返回值,可以在原先的返回值上进行增强
+        return invoke;
+    }
+}
+
+```
+
+#### AOP操作(准备)
+
+>  Spring一般基于**AspectJ**实现AOP
+
++  AspectJ是一个单独框架 , 但是一般一起使用
+
+##### 实现方式
+
+###### 基于xml配置文件
+
+**切入点表达式**
+
+> 知道对哪个类的哪个方法进行增强
+
+**execution**( [**权限修饰符**] [**返回类型**] [**类的全路径**] [**方法名称**] (**参数列表**) )
+
+* 权限修饰符  *****  代表任意修饰符
+* 返回类型可以不写  ( 奇奇怪怪我感觉权限修饰符才应该可以省略 ,  返回类型不要省略 )
+* 全路径和方法之间用**点  “.”  **连接
+* 参数列表可以用两个点代表 **“..”**
+* 对类的所有方法进行增强则用  **“*”** 代替
+* 对包下所有类的所有方法进行增强用 **“*”**  代替类名和方法名
+
+###### 基于注解
 

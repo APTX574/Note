@@ -127,8 +127,30 @@ public class Singleton {
 ### 介绍
 
 > 它提供了一种创建对象的最佳方式。在工厂模式中，我们在创建对象时不会对客户端暴露创建逻辑，并且是通过使用一个共同的接口来指向新创建的对象。
-> 
+>
 > 定义一个创建对象的接口，让其子类自己决定实例化哪一个工厂类，工厂模式使其创建过程延迟到子类进行。
+
+```java
+public class ShapeFactory {
+    
+   //使用 getShape 方法获取形状类型的对象
+   public Shape getShape(String shapeType){
+      if(shapeType == null){
+         return null;
+      }        
+      if(shapeType.equalsIgnoreCase("CIRCLE")){
+         return new Circle();
+      } else if(shapeType.equalsIgnoreCase("RECTANGLE")){
+         return new Rectangle();
+      } else if(shapeType.equalsIgnoreCase("SQUARE")){
+         return new Square();
+      }
+      return null;
+   }
+}
+```
+
+
 
 ### 示例
 
@@ -143,6 +165,7 @@ public class Singleton {
                //通过类的加载器获取资源输入流
                InputStream res = JdbcUtil.class.getClassLoader().getResourceAsStream("jdbc.properties");
                prop.load(res);     //载入资源
+               
                //通过数据库连接池工厂获得数据库连接池
                dataSource = (DruidDataSource) DruidDataSourceFactory.createDataSource(prop);   
            } catch (Exception e) {
@@ -177,9 +200,12 @@ public class Singleton {
 
 2. Apache Commons FileUpload
 
+   
+   
    ***源码***
    
    ```java
+   //将客户端request里携带的数据流按类分成Item
    public interface FileItemFactory {
        FileItem createItem(String var1, String var2, boolean var3, String var4);
    }
@@ -201,16 +227,38 @@ public class Singleton {
    ```java
    FileItemFactory fileItemFactory = new DiskFileItemFactory();
    ServletFileUpload fileUpload = new ServletFileUpload(fileItemFactory);
+   List<FileItem> fileItems = fileUpload.parseRequest(request);
    ```
+   
 3. spring中IOC容器创建对象
    ```java
    ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
-   User user = context.getBean("User", User.class);
+   String str = context.getBean("str", String.class);
+   ```
+
+   ```xml
+   <!--bean1.xml内容-->
+   <bean name="str" class="java.lang.String"/>
+   ```
+
+   ***原理***
+
+   > xml/注解+反射+工厂设计模式
+
    ```
    
-   ***原理***
+   Properties info = new Properties();
    
-   > xml/注解+反射+工厂设计模式
+   InputStream resourceAsStream = ClassLoader.getSystemClassLoader().
+   	getResourceAsStream("application.properties");
    
+   info.load(resourceAsStream);
+   
+   Class clazz = Class.forName(info.getProperty("ClassName"));
+   
+   Object obj = clazz.getConstructor().newInstance();
+   
+   ```
+
    
 
