@@ -42,7 +42,22 @@
   </beans>
   ```
 
+
+
+在其他类中只要写这个就会自动注入
+
+```java
+@AutoWired
+private User user;
+```
+
+
+
   > 使用xml，创建对象时默认调用对象的无参构造方法，必须要有无参构造方法
+  >
+  > 在注入时有参构造方法会与注入冲突不能有有参构造函数
+  >
+  > xml与注解只能二选一
 
 ---
 
@@ -237,6 +252,8 @@
    </beans>
    ```
 
+
+
 ##### 基于注解方式实现注入
 
 1. **@AutoWired**根据类型自动注入
@@ -249,13 +266,37 @@
 4. **@Value**注入普通类型属性 
    * 给一些普通的类型直接用value属性注入值
 
+```
+//相当于xml中的bean标签
+@Repository
+public class UserDaoImpl implements UserDao {
+	//表示会自动寻找合适得类给jdbctl赋值
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+}
+```
+
+
+
 > 都不需要set方法,已经封装了.
+
+
 
  ##### 完全注解开发
 
 1. 创建一个配置类,代替xml配置文件 ,  要添加一个**@Configuration**注解标志注解类
 
 2. 添加注解**@ComponentScan(basePackages={包路径})**代替开启自动扫描的配置
+
+   ```java
+   @Configuration
+   @ComponentScan(basePackages = {"com"})
+   public class Config {
+   }
+   ```
+
+   
 
 3.   加载配置类
 
@@ -359,7 +400,7 @@
    + 类中**理论上能被增强的方法**
 2. **切入点**
    + 类中实际**真正被增强的方法**(有一些方法能被增强但是并未被增强)
-3. 通知(增强)
+3. **通知(增强)**
    + **实际被增强**的部分**逻辑**(增加逻辑判断)
      1. 前置通知
      2. 后置通知
@@ -438,11 +479,9 @@ public class Handler implements InvocationHandler {
 
 +  AspectJ是一个单独框架 , 但是一般一起使用
 
-##### 实现方式
+##### 基于注解
 
-###### 基于xml配置文件
-
-**切入点表达式**
+###### 切入点表达式
 
 > 知道对哪个类的哪个方法进行增强
 
@@ -455,5 +494,134 @@ public class Handler implements InvocationHandler {
 * 对类的所有方法进行增强则用  **“*”** 代替
 * 对包下所有类的所有方法进行增强用 **“*”**  代替类名和方法名
 
-###### 基于注解
+###### 代码实现步骤
 
+1. 编写配置文件
+
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   
+   <!--导入命名空间contex和aop-->
+   <beans xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"			
+          xmlns:context="http://www.springframework.org/schema/context"	
+          xmlns:aop="http://www.springframework.org/schema/aop"
+          xsi:schemaLocation="http://www.springframework.org/schema/beans
+          http://www.springframework.org/schema/beans/spring-beans.xsd
+          http://www.springframework.org/schema/aop 
+          http://www.springframework.org/schema/aop/spring-aop.xsd
+          http://www.springframework.org/schema/context 
+          http://www.springframework.org/schema/context/spring-context.xsd">
+   
+       <context:component-scan base-package="Dao"/>	<!--开启注解自动扫描进行创建对象-->
+       <aop:aspectj-autoproxy/>						<!--开启Aspect的使用声明创建代理-->
+   </beans>
+   ```
+
+2. 编写代理类与被代理类
+
+   ```java
+   //被代理类,是UserDao的一个实现类
+   @Component					//注解没有声明value时为类名(首字母小写)
+   public class UserDaoImpl implements UserDao {
+       @Override
+       public int update(int a, int b) {
+           System.out.println(a + b);
+           return a + b;
+       }
+   }
+   
+   //代理类
+   @Component
+   @Aspect     //生成代理对象
+   public class UserBefore {
+       //注解和切入点表达式
+       @Before("execution(*  Dao.UserDaoImpl.update(..))")
+       //增加的逻辑表达式
+       public void before() {
+           System.out.println("before ,,,,,,");
+       }
+   }
+   ```
+
+> 在编写测试类是传给getBean的字节码文件必须是UserDaoImpl实现的接口的字节码文件,
+> 使用UserDaoImpl.class会给出类型不匹配的错误,猜想创建出来的代理对象不是
+> UserDaoImpl的子类,而是他实现接口UserDao的另一个实现类
+
+###### 通知的不同类型的不同注解
+
+* **@After**   最终通知 ,  不会一定会执行
+
+* **@AfterReturning**   返回通知 ,  如果抛出异常则不会执行
+
+* **@AfterThrowing **  在抛出异常之后
+
+* **@Around **  环绕通知
+
+  * 有参数**ProceedingJoinPoint的proceed**方法代表执行原方法
+
+    ```java
+    @Around("execution(*  Dao.UserDaoImpl.update(..))")
+    public int around(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+    	System.out.println("环绕通知的前面的部分");			//增加的在前面的业务逻辑
+    	Object proceed = proceedingJoinPoint.proceed();		//执行原先的函数
+    	System.out.println("环绕通知的后面的部分");			//增加的在后面的业务逻辑
+    	return (int) proceed;								//原先的返回值
+    }
+    ```
+
+* 几种通知的方式的执行顺序是随机的,但是可以强制限定执行顺(事务?好像后面会讲)
+  也有说是因为底层逻辑更新了所以不同不知道,以后再说
+
+###### 相同切入点的抽取
+
+1. 定义函数添加切入点注解**@Pointcut**
+2. 添加属性value ,  属性值写公用的切入点表达式
+3. 直接使用函数代替切入点表达式  ( 需要带括号 )  
+
+###### 设置增强类的优先级
+
+在增强类添加注解**@Order**里面设置数字类型的优先级 ,  数字越小优先级越高
+
+##### 基于xml配置文件
+
+太傻了 ,  我才不学这个东西,这么复杂我还是用注解吧 ,  这个跳过啦
+
+
+
+## JDBC Template操作数据库
+
+> Spring中对jdbc的封装
+> 可以进行对数据库的增删改查
+> 单独操作或整合模板
+
+### 底层实现
+
+#### 配置数据库连接池
+
+```xml
+<!--配置创建druid连接池对象, 设置关闭连接参数-->
+<bean id="dataSoure" class="com.alibaba.druid.pool.DruidDataSource"
+		destroy-method="close">
+    <!--注入连接池配置参数-->
+	<property name="url" value="jdbc:mysql://localost:8080:shop"/>
+	<property name="username" value="root"/>
+	<property name="password" value="APTX"/>
+	<property name="driverClassName" value="com.mysql.cj.jdbc.Driver"/>
+</bean>
+
+```
+
+#### 配置创建数据库模板对象
+
+```xml
+<!--配置创建数据库连接池-->
+<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+	<property name="dataSource" ref="dataSoure"/>
+</bean>
+
+```
+
+#### 使用函数进行增删改操作
+
+> 没啥新东西就是个方法,跟之前的jdbcUtils基本一致,就是函数名字啥的不一样  

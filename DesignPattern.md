@@ -118,6 +118,11 @@ public class Singleton {
 
 2. Windows任务管理器
 
+3. 数据库连接池
+   可以在数据库连接池的配置文件中定连接的最大数量 ,  初始化数量等,但是数据库连接池只有一个,一般用单列模式去创建
+
+4. Spring用singleton属性创建对象 
+
 
 
 
@@ -238,27 +243,9 @@ public class ShapeFactory {
 
    ```xml
    <!--bean1.xml内容-->
-   <bean name="str" class="java.lang.String"/>
+   <bean name="str" class="java.lang.String" scope="singleton"/> <!--饿汉模式,配置文件一加载就创建对象-->
    ```
 
    ***原理***
 
    > xml/注解+反射+工厂设计模式
-
-   ```
-   
-   Properties info = new Properties();
-   
-   InputStream resourceAsStream = ClassLoader.getSystemClassLoader().
-   	getResourceAsStream("application.properties");
-   
-   info.load(resourceAsStream);
-   
-   Class clazz = Class.forName(info.getProperty("ClassName"));
-   
-   Object obj = clazz.getConstructor().newInstance();
-   
-   ```
-
-   
-
