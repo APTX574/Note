@@ -1,4 +1,4 @@
-# dSpringMVC
+# SpringMVC
 
 > 基于Spring的框架,实际上是Spring的一个模块 ,  是控制器的容器    
 
@@ -43,7 +43,7 @@ MVC拥有一个servlet叫**DispatherServlet**  (中央调度器) ,这个调度�
 > 1. 配置组件扫描器
 > 2. 配置中央调度器，需要配置访问spring文件地址，开启自动创建对象，访问url
 
-#### springMVC处理请求步骤
+### springMVC处理请求步骤
 
 1. 发起请求给Tomcat服务器
 2. Tomcat根据web.xml文件映射规则将请求发送给中央调度器
@@ -52,7 +52,7 @@ MVC拥有一个servlet叫**DispatherServlet**  (中央调度器) ,这个调度�
 5. 将请求转发个控制器的对应方法
 6. 框架执行方法，将返回对象进行处理转发到下一个页面
 
-#### 处理代码示例
+### 处理代码示例
 
 ```xml
 <!--springmvc.xml配置文件是spring的配置文件用来配置Bean此处开启组件扫描-->    
@@ -71,7 +71,7 @@ public class Some {
      * 用来处理some.do的请求,返回值参数很多,名称自定义
      * RequestMapping请求映射注解,将请求和方法绑定,一个请求处理一个方法
      * 属性:
-     * 1.value,是一个String表示请求的uri地址,属性唯一
+     * 1.value,是一个String表示请求的uri地址,属性唯一,可写多个请求
      *	需要在uri地址的前面添加"/"
      * @return model是给用户的数据, view是给用户的视图 jsp等
      */
@@ -106,7 +106,7 @@ public class Some {
 </%--@elvariable id="msg" type="java.lang.String>
 ```
 
-#### springmvc框架底层原理
+## springmvc框架底层原理
 
 1. **tomcat**启动后根据**web.xml**中**DispatcherServlet**对象的**load-on-start**属性创建DispatcerServlet对象
    **DispatcerServlet**对象继承自**HttpServlet**是一个真实的**Servlet**对象
@@ -119,7 +119,119 @@ public class Some {
 5. **Controller**对象处理完请求返回对应的对象(**ModelAndView**对象)
 6. 框架处理返回对象, 将添加的对象添加到**request**域中, 处理请求转发等
 
+## 视图解析器
+
+> springmvc工具可以帮助开发人员设置视图文件的访问路径
+
+### 配置
+
+```xml
+<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+	<!--前缀属性:视图文件的路径,前后斜杠,前代表根,后代表是路径-->
+	<property name="prefix" value="/WEB-INF/view/"/>
+	<!--后缀属性:试图文件的扩展名-->
+	<property name="suffix" value=".jsp"/>
+</bean>
+```
+
+配置后使用视图需要这样
+
+```java
+mv.setViewName("show");
+```
 
 
 
+## RequestMapping注解解析
+
+1. 将地址中共用的部分抽取出来,叫做**模块名称**可以放在类的前面统一定义
+
+   ```java
+   @Controller
+   @RequestMapping("/user")		//统一模块名称对所有方法有效
+   public class Some {}
+   ```
+
+2. 设置接收请求的请求方式
+
+   ```java
+   //method属性设置请求方式
+   @RequestMapping(value = {"/some.do"},method = RequestMethod.GET)
+   public ModelAndView doSome() {
+   	//创建返回对象
+   	ModelAndView mv = new ModelAndView();
+   	//添加数据,在请求的最后框架会讲数据放在request的域中
+   	mv.addObject("msg", "欢迎使用SpringMVC处理请求");
+   	//显示页面实际就是请求转发
+   	mv.setViewName("show");
+   	return mv;
+   }
+   ```
+
+   
+
+## Controller获得请求参数
+
+> 在处理请求的方法中定义形参参数,mvc会给他们赋值使用
+
+### 常用请参数
+
+  1. **HttpServletRequest request**
+  2. **HttpServletResponse response**
+  3. **HttpSession session**
+  4. 请求中所携带的请求参数
+     * 逐个接收方案
+     * 对象接收方案
+
+#### 逐个接收方案
+
+> 在处理方法的形参中写入与请求参数同名的参数就可以直接使用,参数名必须一致
+
+```java
+public ModelAndView doSome(String name, String password) {
+```
+
+类型需要一一对应,转换不合法不会报错会400,然后在spring日志中会有一个记录
+
+post方式的请求会造成中文乱码, get方式不会
+
+##### 在过滤器中设置字符编码问题
+
+过滤器可以使用框架定义的,也可以自己定义
+
+###### 配置字符集过滤器对象
+
+```xml
+<filter>
+    <!--配置字符集过滤器-->
+    <filter-name>characterEncodingFilter</filter-name>
+    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+    
+    <!--设置字符集编码-->
+    <init-param>
+        <param-name>encoding</param-name>
+        <param-value>utf-8</param-value>
+    </init-param>
+   
+    <!--下面将请求会回应的字符强制使用设置为ture-->
+    <init-param>
+        <param-name>forceRequestEncoding</param-name>
+        <param-value>true</param-value>
+    </init-param>
+    <init-param>
+        <param-name>forceResponseEncoding</param-name>
+        <param-value>true</param-value>
+    </init-param>
+</filter>
+
+<!--下面将过滤器设置为对所有访问有效-->
+<filter-mapping>
+    <filter-name>characterEncodingFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+</filter-mapping>
+```
+
+
+
+#### 对象接收方案
 
