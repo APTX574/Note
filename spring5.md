@@ -625,3 +625,158 @@ public class Handler implements InvocationHandler {
 #### 使用函数进行增删改操作
 
 > 没啥新东西就是个方法,跟之前的jdbcUtils基本一致,就是函数名字啥的不一样  
+
+
+
+### Spring声明式事务管理
+
+#### 配置文件
+
+```xml
+<!--配置事务管理接口实现类-->
+<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+    <!--注入数据源-->
+	<property name="dataSource" ref="dataSoure"/>
+</bean>
+<!--开启事务管理, 指定事务管理器-->
+<tx:annotation-driven transaction-manager="transactionManager"/>
+```
+
+#### 添加注解
+
+将注解**@Transactiona**l添加到类或者方法上
+
+#### 注解参数配置
+
+* **propagation()**    事务的传播行为
+* **isolation()**    事务的隔离级别
+* **Timeout**    超时时间
+* **readOnly()**    是否只读 
+* **rollbackFor()**    回滚
+* **noRollbackFor()**     不回滚
+
+ ##### 事物的传播行为
+
+* 多事务方法之间调用,事务间的管理方式
+* 事务方法指对数据库表中数据进行更改的操作
+* 多事务方法指在一事务方法中调用另一事务方法
+* 或无事务调用有事务,或有事务调用无事务
+
+<img src="C:\Users\aptx\AppData\Roaming\Typora\typora-user-images\image-20210520091044112.png" alt="image-20210520091044112" style="zoom:75%;" />
+
+###### required  必须的
+
+> 方法必须在事物中运行,如果当前上下文中没有事物则就自己开启事物
+> 如果当前上下文存在事物,则就在当前存在的事物中运行
+
+```java
+@Transactional(propagation = Propagation.REQUIRED)
+public void methodA() {
+	methodB();
+	// do something
+}
+@Transactional(propagation = Propagation.REQUIRED)
+public void methodB() {
+    // do something
+}
+```
+
+单独调用methodB方法时，因为当前上下文不存在事务，所以会开启一个新的事务。 
+调用methodA方法时，因为当前上下文不存在事务，所以会开启一个新的事务。当执行到methodB时，methodB发现当前上下文有事务，因此就加入到当前事务中来。
+
+###### required_new
+
+> 方法必须在事物中运行,如果当前上下文中没有事物则就自己开启事物
+> 但是如果上下文存在事物,则将该事物暂停挂起,开启自己的事物,
+> 自己的事物结束后,继续原先的事物
+
+使用PROPAGATION_REQUIRES_NEW,需要使用 JtaTransactionManager作为事务管理器。 
+它会开启一个新的事务。如果一个事务已经存在，则先将这个存在的事务挂起。
+
+```java
+@Transactional(propagation = Propagation.REQUIRED)
+public void methodA() {
+	doSomeThingA();
+	methodB();
+	doSomeThingB();
+	// do something else
+}
+// 事务属性为REQUIRES_NEW
+@Transactional(propagation = Propagation.REQUIRES_NEW)
+public void methodB() {
+    // do something
+}
+```
+
+当调用
+
+```java
+main{  
+	methodA();
+} 
+```
+
+相当于调用
+
+```java
+main(){
+	TransactionManager tm = null;
+	try{
+		//获得一个JTA事务管理器
+		tm = getTransactionManager();
+		tm.begin();//开启一个新的事务
+		Transaction ts1 = tm.getTransaction();
+		doSomeThing();
+		tm.suspend();//挂起当前事务
+		try{
+			tm.begin();//重新开启第二个事务
+			Transaction ts2 = tm.getTransaction();
+			methodB();
+			ts2.commit();//提交第二个事务
+		} Catch(RunTimeException ex) {
+			ts2.rollback();//回滚第二个事务
+		} finally {
+			//释放资源
+		}
+        
+		//methodB执行完后，恢复第一个事务
+		tm.resume(ts1);
+		doSomeThingB();
+		ts1.commit();//提交第一个事务
+	} catch(RunTimeException ex) {
+		ts1.rollback();//回滚第一个事务
+	} finally {
+		//释放资源
+	}
+	
+}
+```
+
+在这里，我把ts1称为外层事务，ts2称为内层事务。从上面的代码可以看出，ts2与ts1是两个独立的事务，互不相干。Ts2是否成功并不依赖于 ts1。如果methodA方法在调用methodB方法后的doSomeThingB方法失败了，而methodB方法所做的结果依然被提交。而除了 methodB之外的其它代码导致的结果却被回滚了
+
+###### 超时时间
+
+> 设定超时时间,超过时间自动回滚,默认为-1,以秒为单位
+
+###### readOnly
+
+> 默认**FALSE**可读可写, 值为**TRUE**时只能做查询操作不能进行更改
+
+###### rollback
+
+> 设置哪些异常回滚,哪些异常不回滚
+
+#### 完全注解开发
+
+1. 新建类添加**@Configuration**注解, 标明注解类
+2.  添加注解**@ComponentScan**指明组件扫描范围
+3. 添加注解**@EnableTransactionManagement**开启事物
+4. 在配置类中创建返回数据库连接池方法添加**@Bean**注解
+5. 在返回函数中设置配置参数,**@Bean**注解代表将返回值交给IOC管理
+6. 配置**JdbcTemplate** 返回函数跟数据库连接池类似
+7. 在返回函数中给**JdbcTenplate**配置数据库连接池对象,使用参数构造注入 (自动注入)
+8. 创建事物管理器对象 ,  相同方式注入数据库连接池
+
+
+
+  
